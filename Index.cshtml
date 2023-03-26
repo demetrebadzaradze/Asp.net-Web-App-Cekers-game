@@ -1,0 +1,189 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Checkers</h1>
+    <p>play checkers</p>
+ 
+
+        
+
+
+
+</div>
+ 
+ <style>
+.checker {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin: 0 auto;
+  background-color: #fff;
+  box-sizing: border-box;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.square {
+  position: relative; /* add this to position the checker pieces relative to their parent square */
+}
+
+/* Add this new CSS to position the checker pieces within their squares */
+.black .checker {
+  top: 5px;
+  left: 5px;
+ background-color: white; /* set the background color of red pieces */
+}
+
+.red .checker {
+  bottom: 5px;
+  right: 5px;
+   background-color: red; /* set the background color of white pieces */
+}
+
+
+</style>
+
+<style>
+    .checkerboard {
+        display: grid;
+        grid-template-columns: repeat(8, 50px);
+        grid-template-rows: repeat(8, 50px);
+        margin: 50px auto;
+        border: 2px solid black;
+    }
+
+    .square {
+        width: 50px;
+        height: 50px;
+    }
+
+    .black {
+        background-color: red; /*black is red*/
+        color:red
+    }
+
+    .red {
+        background-color: black; /*red is black*/
+        color: black
+    }
+</style>
+
+
+
+
+
+<div class="checkerboard">
+    @for (int row = 0; row < 8; row++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            string colorClass = (row + col) % 2 == 0 ? "black" : "red";
+            <div class="square @colorClass">
+                @if (((int[,])ViewData["Board"])[row, col] == 1)
+                {
+                    <div class="checker black" data-row="@row" data-col="@col"></div>
+                }
+                else if (((int[,])ViewData["Board"])[row, col] == 2)
+                {
+                    <div class="checker red" data-row="@row" data-col="@col"></div>
+                }
+            </div>
+        }
+    }
+</div>
+
+
+
+
+<script>
+   
+   var selectedPiece = null;
+
+$(document).ready(function() {
+    $('.checker').on('click', function() {
+        // Clear any existing valid move highlights
+        $('.valid-move').removeClass('valid-move');
+        
+        // If another piece is already selected, deselect it
+        if (selectedPiece != null) {
+            $(selectedPiece).removeClass('selected');
+        }
+        
+        // Select the clicked piece
+        $(this).addClass('selected');
+        selectedPiece = this;
+        
+        // Calculate the valid moves for the selected piece
+        var row = $(this).data('row');
+        var col = $(this).data('col');
+        var validMoves = calculateValidMoves(row, col);
+        
+        // Highlight the squares where the piece can move
+        for (var i = 0; i < validMoves.length; i++) {
+            var moveRow = validMoves[i][0];
+            var moveCol = validMoves[i][1];
+            $('.square[data-row="' + moveRow + '"][data-col="' + moveCol + '"]').addClass('valid-move');
+        }
+    });
+});
+
+function calculateValidMoves(row, col, board) {
+    let validMoves = [];
+
+    // check if the piece is a king or a regular piece
+    let piece = board[row][col];
+    let isKing = (piece === 3 || (piece === 1 && row === 0) || (piece === 2 && row === 7));
+
+    // determine the directions to check for valid moves based on the piece type
+    let directions = [];
+    if (isKing) {
+        directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    } else if (piece === 1) {
+        directions = [[-1, -1], [-1, 1]];
+    } else if (piece === 2) {
+        directions = [[1, -1], [1, 1]];
+    }
+
+    // iterate over each direction and check for valid moves
+    for (let [rowOffset, colOffset] of directions) {
+        let newRow = row + rowOffset;
+        let newCol = col + colOffset;
+        let jumpedRow = row + (rowOffset * 2);
+        let jumpedCol = col + (colOffset * 2);
+
+        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            if (board[newRow][newCol] === 0) {
+                // empty square, check if we can move there
+                validMoves.push([newRow, newCol]);
+            } else if (board[newRow][newCol] !== piece) {
+                // enemy piece, check if we can jump over it
+                if (jumpedRow >= 0 && jumpedRow < 8 && jumpedCol >= 0 && jumpedCol < 8 && board[jumpedRow][jumpedCol] === 0) {
+                    validMoves.push([jumpedRow, jumpedCol]);
+                }
+            }
+        }
+    }
+
+    return validMoves;
+}
+function highlightValidMoves(row, col) {
+    let validMoves = calculateValidMoves(row, col, Board);
+
+    // loop over valid moves and highlight corresponding squares
+    for (let [moveRow, moveCol] of validMoves) {
+        let selector = `.square[data-row="${moveRow}"][data-col="${moveCol}"]`;
+        $(selector).addClass("valid-move");
+    }
+}
+
+
+
+</script>
+
+
